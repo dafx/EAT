@@ -80,3 +80,17 @@
 
 ## 6. Conclusion
 [cite_start]EAT provides a highly efficient pathway for training high-performance audio SSL models[cite: 325, 326]. [cite_start]The authors plan to scale the model further and explore joint audio-speech training in future iterations[cite: 331, 332].
+
+---
+
+## 7. Implementation Discrepancies
+
+The following table outlines notable differences between the high-level methodology described in literature and the specific implementation found in this repository.
+
+| Feature | Paper Description | Codebase Implementation | Rationale/Observation |
+| :--- | :--- | :--- | :--- |
+| **Teacher Complexity** | Lightweight; reuses student CNN features to save FLOPs. | "Heavy" teacher; retains and runs its own CNN encoder. | [pretraining_AS2M.yaml](pretraining_AS2M.yaml#L113) sets `ema_local_encoder: true`, maintaining separate EMA weights for the CNN for better target stability. |
+| **Modality Support** | Audio-specific Transformer (EAT). | Multi-modal backbone (Data2VecMulti). | The model inherits from [data2vec 2.0](https://github.com/facebookresearch/fairseq/tree/main/examples/data2vec), allowing for potential extension to Image/Text. |
+| **Utterance Loss** | Standard UFO regression on CLS token. | Optional DINO-style loss experiment. | [EAT_pretraining.py](EAT_pretraining.py#L127-L132) includes logic for a `dino_loss` and center-tracking, though it's marked as "not included in our paper." |
+| **Teacher Updates** | Simple 12-layer ViT EMA. | Granular "Encoder-Only" EMA toggle. | `ema_encoder_only` defaults to `True` in [EAT_pretraining.py](EAT_pretraining.py#L98), allowing the model to freeze the CNN part of the teacher if needed. |
+| **Position Premise** | Often uses specialized audio biases. | Standard ViT alibi-free approach. | As noted in [EAT_pretraining.py](EAT_pretraining.py#L461), EAT specifically avoids the Alibi mechanism common in some other Transformer variants. |
